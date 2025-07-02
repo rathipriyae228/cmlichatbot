@@ -3,7 +3,7 @@ Flask-Cors==5.0.0
 requests==2.32.4
 yake==0.4.8
 sentence-transformers==2.2.2
+tokenizers==0.13.3          # ✅ Last version with prebuilt wheels
 torch==2.7.1
 huggingface_hub==0.14.1
-tokenizers==0.13.3
 gunicorn==23.0.0
