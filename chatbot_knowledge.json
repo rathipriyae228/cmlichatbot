@@ -75,9 +75,10 @@
   {
     "question": "Does CMLI offer any academic courses in AI?",
     "keywords": [
+      "AI",
       "academic",
-      "courses",
-      "AI"
+      "courses"
+      
     ],
     "answer": "Yes, CMLI offers academic programs such as the \n\u2022\tB.Sc. in Augmented Reality and Virtual Reality \n\u2022\tM.Sc. in Artificial Intelligence \nTo know more visite the website. ",
     "link": "https://avinuty.ac.in/cmli-research"
