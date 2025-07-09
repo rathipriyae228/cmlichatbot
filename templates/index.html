@@ -4,212 +4,173 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CMLI Chatbot</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --main-bg: #f4f4f4;
-      --chat-bg: #ffffff;
-      --primary-color: #0056d2;
-      --user-color: #0056d2;
-      --bot-color: #e1e1e1;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
     body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--main-bg);
-      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
       display: flex;
       justify-content: center;
-      align-items: flex-start;
-      padding: 30px 10px;
-      height: 100vh;
+      padding: 20px;
+      margin: 0;
     }
 
     .chat-container {
-      width: 100%;
-      max-width: 420px;
-      background-color: var(--chat-bg);
-      border-radius: 12px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+      width: 350px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
+      margin-bottom: 30px
     }
 
     .chat-header {
       display: flex;
       align-items: center;
-      padding: 12px 16px;
-      background-color: var(--primary-color);
+      justify-content: center;
+      padding: 10px;
+      background-color: #007bff;
       color: white;
-      font-size: 16px;
-      font-weight: 600;
+      font-weight: bold;
     }
 
-    .chat-header img {
-      width: 42px;
-      height: 42px;
-      margin-right: 10px;
+    .logo {
+      width: 50px;
+      height: 50px;
+      object-fit: contain;
       border-radius: 50%;
-      background-color: white;
-      object-fit: cover;
+      margin-right: 10px;
     }
 
     .chat-box {
-      padding: 14px;
       height: 400px;
       overflow-y: auto;
-      background-color: #fafafa;
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
       display: flex;
       flex-direction: column;
     }
 
     .message {
-      padding: 10px 14px;
-      margin: 6px 0;
-      border-radius: 10px;
+      padding: 8px;
+      margin: 5px 0;
+      border-radius: 5px;
       max-width: 80%;
-      font-size: 14px;
-      line-height: 1.4;
     }
 
     .user {
-      background-color: var(--user-color);
+      background: #007bff;
       color: white;
       align-self: flex-end;
     }
 
     .bot {
-      background-color: var(--bot-color);
-      color: #222;
+      background: #ddd;
+      color: black;
       align-self: flex-start;
     }
 
     .input-box {
       display: flex;
-      padding: 12px;
-      background-color: white;
-      border-top: 1px solid #ddd;
+      padding: 10px;
+      background: #fff;
     }
 
     input {
       flex: 1;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 14px;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
       outline: none;
     }
 
     button {
-      margin-left: 8px;
-      padding: 10px 16px;
-      background-color: var(--primary-color);
+      margin-left: 5px;
+      padding: 8px 12px;
+      background: #007bff;
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 14px;
+      border-radius: 5px;
       cursor: pointer;
     }
 
     button:disabled {
-      background-color: #aaa;
-    }
-
-    .typing {
-      font-style: italic;
-      font-size: 13px;
-      opacity: 0.7;
-      animation: blink 1s infinite;
-    }
-
-    @keyframes blink {
-      0% { opacity: 0.4; }
-      50% { opacity: 1; }
-      100% { opacity: 0.4; }
-    }
-
-    @media (max-width: 500px) {
-      .chat-container {
-        width: 100%;
-        border-radius: 0;
-      }
+      background: #aaa;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
   <div class="chat-container">
     <div class="chat-header">
-      <img src="{{ url_for('static', filename='logo.png') }}" alt="CMLI Logo">
-      CMLI Chat Assistant
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="CMLI Logo" class="logo"/>
+      Centre for Machine Learning and Intelligence
     </div>
 
     <div class="chat-box" id="chat-box"></div>
 
     <div class="input-box">
-      <input type="text" id="user-input" placeholder="Type your question..." onkeypress="handleKeyPress(event)">
+      <input type="text" id="user-input" placeholder="Enter your query..." onkeypress="handleKeyPress(event)" />
       <button id="send-btn" onclick="sendMessage()">Send</button>
     </div>
   </div>
 
   <script>
-    window.onload = () => {
+    // Initial greeting
+    window.onload = function () {
       fetch("/default-message")
-        .then(res => res.json())
+        .then(response => response.json())
         .then(data => displayMessage("CMLI: " + data.response, "bot"))
-        .catch(err => console.error(err));
+        .catch(error => console.error("Error:", error));
     };
 
+    // Chat functionality
     function sendMessage() {
-      const input = document.getElementById("user-input");
-      const msg = input.value.trim();
-      const sendBtn = document.getElementById("send-btn");
+      const inputField = document.getElementById("user-input");
+      const userMessage = inputField.value.trim();
+      const sendButton = document.getElementById("send-btn");
 
-      if (!msg) return;
+      if (!userMessage) return;
 
-      displayMessage("You: " + msg, "user");
-      input.value = "";
-      sendBtn.disabled = true;
+      displayMessage("You: " + userMessage, "user");
+      inputField.value = "";
+      sendButton.disabled = true;
 
-      const typingMsg = displayMessage("CMLI is typing...", "bot", true);
+      const typingMsg = displayMessage("CMLI is typing...", "bot");
 
       fetch("/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: msg })
+        body: JSON.stringify({ message: userMessage })
       })
-        .then(res => res.json())
+        .then(response => response.json())
         .then(data => {
           typingMsg.remove();
           displayMessage("CMLI: " + data.response, "bot");
         })
-        .catch(err => {
+        .catch(error => {
           typingMsg.remove();
-          displayMessage("CMLI: Sorry, something went wrong.", "bot");
-          console.error(err);
+          displayMessage("CMLI: Sorry, an error occurred.", "bot");
+          console.error("Error:", error);
         })
         .finally(() => {
-          sendBtn.disabled = false;
+          sendButton.disabled = false;
         });
     }
 
-    function displayMessage(message, sender, isTyping = false) {
+    function displayMessage(message, sender) {
       const chatBox = document.getElementById("chat-box");
-      const msgDiv = document.createElement("div");
-      msgDiv.classList.add("message", sender);
-      if (isTyping) msgDiv.classList.add("typing");
-      msgDiv.innerHTML = message;
-      chatBox.appendChild(msgDiv);
+      const msg = document.createElement("div");
+      msg.classList.add("message", sender);
+      msg.innerHTML = message;
+      chatBox.appendChild(msg);
       chatBox.scrollTop = chatBox.scrollHeight;
-      return msgDiv;
+      return msg;
     }
 
-    function handleKeyPress(e) {
-      if (e.key === "Enter") sendMessage();
+    function handleKeyPress(event) {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
     }
   </script>
 </body>
