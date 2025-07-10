@@ -6,61 +6,61 @@
   <title>CMLI Chatbot</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      background: #eef2f3;
-      height: 100vh;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
       display: flex;
       justify-content: center;
-      align-items: center;
+      padding: 20px;
+      margin: 0;
     }
 
     .chat-container {
-      width: 400px;
-      height: 600px;
+      width: 350px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      margin-bottom: 30px;
       display: flex;
       flex-direction: column;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
-      overflow: hidden;
-      position: relative;
     }
 
     .chat-header {
       display: flex;
       align-items: center;
-      padding: 15px;
+      justify-content: center;
+      padding: 10px;
       background: linear-gradient(to right, #007bff, #00c6ff);
       color: white;
       font-weight: bold;
     }
 
     .logo {
-      width: 40px;
-      height: 40px;
-      object-fit: cover;
+      width: 50px;
+      height: 50px;
+      object-fit: contain;
       border-radius: 50%;
-      background-color: white;
       margin-right: 10px;
+      background-color: white;
+      padding: 2px;
     }
 
     .chat-box {
-      flex-grow: 1;
-      padding: 15px;
+      height: 400px;
       overflow-y: auto;
-      background: #f9f9f9;
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
       display: flex;
       flex-direction: column;
+      position: relative;
     }
 
     .message {
-      padding: 10px 14px;
+      padding: 8px 10px;
       margin: 5px 0;
-      border-radius: 12px;
+      border-radius: 8px;
       max-width: 80%;
       font-size: 14px;
-      animation: fadeIn 0.3s ease-in;
     }
 
     .user {
@@ -70,30 +70,34 @@
     }
 
     .bot {
-      background: #e4e6eb;
+      background: #e0e0e0;
       color: black;
       align-self: flex-start;
     }
 
-    @keyframes fadeIn {
-      from {opacity: 0;}
-      to {opacity: 1;}
+    .typing-indicator {
+      font-style: italic;
+      font-size: 13px;
+      color: #666;
+      align-self: flex-start;
+      animation: blink 1s linear infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
     }
 
     .input-box {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
       display: flex;
       padding: 10px;
       background: #fff;
-      border-top: 1px solid #ddd;
+      border-top: 1px solid #ccc;
     }
 
     input {
       flex: 1;
-      padding: 10px;
+      padding: 8px;
       border: 1px solid #ccc;
       border-radius: 20px;
       outline: none;
@@ -101,8 +105,8 @@
     }
 
     button {
-      margin-left: 8px;
-      padding: 10px 16px;
+      margin-left: 5px;
+      padding: 8px 14px;
       background: #007bff;
       color: white;
       border: none;
@@ -111,82 +115,83 @@
       font-size: 14px;
     }
 
-    .typing-animation {
-      font-style: italic;
-      font-size: 13px;
-      color: #555;
-      animation: blink 1s infinite;
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
   <div class="chat-container">
     <div class="chat-header">
-      <img src="{{ url_for('static', filename='logo.png') }}" alt="CMLI Logo" class="logo" />
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="CMLI Logo" class="logo"/>
       Centre for Machine Learning and Intelligence
     </div>
 
     <div class="chat-box" id="chat-box"></div>
 
     <div class="input-box">
-      <input type="text" id="user-input" placeholder="Type your question..." onkeypress="handleKeyPress(event)" />
-      <button onclick="sendMessage()">Send</button>
+      <input type="text" id="user-input" placeholder="Enter your query..." onkeypress="handleKeyPress(event)" />
+      <button id="send-btn" onclick="sendMessage()">Send</button>
     </div>
   </div>
 
   <script>
     // Initial greeting
-    window.onload = () => {
+    window.onload = function () {
       fetch("/default-message")
-        .then(res => res.json())
+        .then(response => response.json())
         .then(data => displayMessage(data.response, "bot"))
-        .catch(() => displayMessage("Failed to load greeting.", "bot"));
+        .catch(error => console.error("Error:", error));
     };
 
+    // Send message
     function sendMessage() {
       const inputField = document.getElementById("user-input");
       const userMessage = inputField.value.trim();
+      const sendButton = document.getElementById("send-btn");
+
       if (!userMessage) return;
 
-      displayMessage(userMessage, "user");
+      displayMessage("You: " + userMessage, "user");
       inputField.value = "";
+      sendButton.disabled = true;
 
-      const typingMsg = displayMessage("CMLI is typing...", "bot");
-      typingMsg.classList.add("typing-animation");
+      const typingMsg = displayMessage("CMLI is typing...", "typing-indicator");
 
       fetch("/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: userMessage })
       })
-      .then(res => res.json())
-      .then(data => {
-        typingMsg.remove();
-        displayMessage(data.response, "bot");
-      })
-      .catch(() => {
-        typingMsg.remove();
-        displayMessage("CMLI: Sorry, something went wrong.", "bot");
-      });
+        .then(response => response.json())
+        .then(data => {
+          typingMsg.remove();
+          displayMessage("CMLI: " + data.response, "bot");
+        })
+        .catch(error => {
+          typingMsg.remove();
+          displayMessage("CMLI: Sorry, an error occurred.", "bot");
+          console.error("Error:", error);
+        })
+        .finally(() => {
+          sendButton.disabled = false;
+        });
     }
 
-    function displayMessage(text, sender) {
+    // Show message
+    function displayMessage(message, sender) {
       const chatBox = document.getElementById("chat-box");
-      const message = document.createElement("div");
-      message.className = `message ${sender}`;
-      message.textContent = text;
-      chatBox.appendChild(message);
+      const msg = document.createElement("div");
+      msg.classList.add("message", sender);
+      msg.innerHTML = message;
+      chatBox.appendChild(msg);
       chatBox.scrollTop = chatBox.scrollHeight;
-      return message;
+      return msg;
     }
 
-    function handleKeyPress(e) {
-      if (e.key === "Enter") {
+    function handleKeyPress(event) {
+      if (event.key === "Enter") {
         sendMessage();
       }
     }
