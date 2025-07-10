@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 import json
 from sklearn.feature_extraction.text import TfidfVectorizer
+from rapidfuzz import fuzz  # ✅ Added fuzzy logic
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
@@ -20,15 +21,33 @@ def extract_keywords(text):
     return keywords
 
 # ✅ Match response by keyword
-def find_answer(keywords):
+def find_answer(keywords, user_input):
+    # First try keyword match
     for item in knowledge_base:
-        entry_keywords = [kw.strip().lower() for kw in item['keywords']]
+        entry_keywords = [kw.strip().lower() for kw in item.get('keywords', [])]
         for keyword in keywords:
             if keyword.lower() in entry_keywords:
                 response = item['answer']
                 if item.get('link'):
                     response += f'<br><a href="{item["link"]}" target="_blank">Click here for more info</a>'
                 return response
+
+    # ✅ Fallback: fuzzy match against questions
+    best_score = 0
+    best_item = None
+    for item in knowledge_base:
+        question = item.get('question', '').lower()
+        score = fuzz.partial_ratio(user_input, question)
+        if score > best_score:
+            best_score = score
+            best_item = item
+
+    if best_score >= 80:  # ✅ Adjustable threshold
+        response = best_item['answer']
+        if best_item.get('link'):
+            response += f'<br><a href="{best_item["link"]}" target="_blank">Click here for more info</a>'
+        return response
+
     return "Sorry, I couldn't find an answer to your question."
 
 @app.route('/')
@@ -49,7 +68,7 @@ def chat():
         keywords = extract_keywords(user_input)
         print(f"🔎 Extracted Keywords: {keywords}")
 
-        answer = find_answer(keywords)
+        answer = find_answer(keywords, user_input)
         return jsonify({"response": answer})
 
     except Exception as e:
