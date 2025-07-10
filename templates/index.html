@@ -5,22 +5,60 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CMLI Chatbot</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: radial-gradient(circle, #e1eaff, #c1d0f4);
       display: flex;
       justify-content: center;
-      padding: 20px;
-      margin: 0;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bubble-background {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: -1;
+    }
+
+    .bubble {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      animation: float 10s infinite ease-in-out;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(0) scale(1);
+      }
+      50% {
+        transform: translateY(-600px) scale(1.2);
+      }
+      100% {
+        transform: translateY(0) scale(1);
+      }
     }
 
     .chat-container {
-      width: 350px;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      width: 380px;
+      height: 600px;
+      background: rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
       overflow: hidden;
-      margin-bottom: 30px;
       display: flex;
       flex-direction: column;
     }
@@ -29,99 +67,115 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 10px;
+      padding: 12px;
       background: linear-gradient(to right, #007bff, #00c6ff);
       color: white;
       font-weight: bold;
+      font-size: 16px;
     }
 
     .logo {
-      width: 50px;
-      height: 50px;
-      object-fit: contain;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       margin-right: 10px;
-      background-color: white;
-      padding: 2px;
+      object-fit: contain;
+      background: white;
+      padding: 3px;
     }
 
     .chat-box {
-      height: 400px;
+      flex: 1;
+      padding: 16px;
       overflow-y: auto;
-      padding: 10px;
-      border-bottom: 1px solid #ddd;
       display: flex;
       flex-direction: column;
-      position: relative;
     }
 
     .message {
-      padding: 8px 10px;
-      margin: 5px 0;
-      border-radius: 8px;
-      max-width: 80%;
+      max-width: 75%;
+      padding: 10px 14px;
+      border-radius: 16px;
+      margin-bottom: 10px;
       font-size: 14px;
+      position: relative;
+      transition: transform 0.2s ease;
+    }
+
+    .message:hover {
+      transform: scale(1.02);
     }
 
     .user {
-      background: #007bff;
-      color: white;
       align-self: flex-end;
+      background: linear-gradient(to right, #4facfe, #00f2fe);
+      color: white;
     }
 
     .bot {
-      background: #e0e0e0;
-      color: black;
       align-self: flex-start;
+      background: linear-gradient(to right, #ffe985, #fa742b);
+      color: black;
+    }
+
+    .bot::before {
+      content: "🤖 ";
     }
 
     .typing-indicator {
-      font-style: italic;
-      font-size: 13px;
-      color: #666;
       align-self: flex-start;
-      animation: blink 1s linear infinite;
+      font-style: italic;
+      color: #333;
+      font-size: 13px;
+      animation: blink 1s infinite;
     }
 
     @keyframes blink {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
+      50% { opacity: 0.4; }
     }
 
     .input-box {
       display: flex;
       padding: 10px;
-      background: #fff;
+      background: rgba(255, 255, 255, 0.5);
       border-top: 1px solid #ccc;
     }
 
     input {
       flex: 1;
-      padding: 8px;
-      border: 1px solid #ccc;
+      padding: 10px;
       border-radius: 20px;
+      border: 1px solid #ccc;
       outline: none;
       font-size: 14px;
     }
 
     button {
-      margin-left: 5px;
-      padding: 8px 14px;
+      margin-left: 8px;
+      padding: 10px 16px;
       background: #007bff;
       color: white;
       border: none;
       border-radius: 20px;
       cursor: pointer;
       font-size: 14px;
+      transition: background 0.3s;
     }
 
-    button:disabled {
-      background: #aaa;
-      cursor: not-allowed;
+    button:hover {
+      background: #005bbf;
     }
   </style>
 </head>
 <body>
+
+  <div class="bubble-background">
+    <div class="bubble" style="top: 80%; left: 20%; width: 25px; height: 25px;"></div>
+    <div class="bubble" style="top: 70%; left: 70%; width: 15px; height: 15px;"></div>
+    <div class="bubble" style="top: 90%; left: 40%; width: 20px; height: 20px;"></div>
+  </div>
+
   <div class="chat-container">
     <div class="chat-header">
       <img src="{{ url_for('static', filename='logo.png') }}" alt="CMLI Logo" class="logo"/>
@@ -137,7 +191,6 @@
   </div>
 
   <script>
-    // Initial greeting
     window.onload = function () {
       fetch("/default-message")
         .then(response => response.json())
@@ -145,7 +198,6 @@
         .catch(error => console.error("Error:", error));
     };
 
-    // Send message
     function sendMessage() {
       const inputField = document.getElementById("user-input");
       const userMessage = inputField.value.trim();
@@ -153,7 +205,7 @@
 
       if (!userMessage) return;
 
-      displayMessage("You: " + userMessage, "user");
+      displayMessage(userMessage, "user");
       inputField.value = "";
       sendButton.disabled = true;
 
@@ -167,7 +219,7 @@
         .then(response => response.json())
         .then(data => {
           typingMsg.remove();
-          displayMessage("CMLI: " + data.response, "bot");
+          displayMessage(data.response, "bot");
         })
         .catch(error => {
           typingMsg.remove();
@@ -179,7 +231,6 @@
         });
     }
 
-    // Show message
     function displayMessage(message, sender) {
       const chatBox = document.getElementById("chat-box");
       const msg = document.createElement("div");
