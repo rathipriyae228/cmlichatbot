@@ -1,65 +1,195 @@
-from flask import Flask, render_template, request, jsonify
-from flask_cors import CORS
-import json
-from sentence_transformers import SentenceTransformer, util
-import torch
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CMLI Chatbot</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background: #eef2f3;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
-app = Flask(__name__, static_folder='static', template_folder='templates')
-CORS(app)
+    .chat-container {
+      width: 400px;
+      height: 600px;
+      display: flex;
+      flex-direction: column;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      position: relative;
+    }
 
-# ✅ Load knowledge base
-with open('chatbot_knowledge.json', 'r', encoding='utf-8') as f:
-    knowledge_base = json.load(f)
+    .chat-header {
+      display: flex;
+      align-items: center;
+      padding: 15px;
+      background: linear-gradient(to right, #007bff, #00c6ff);
+      color: white;
+      font-weight: bold;
+    }
 
-# ✅ Load semantic model
-model = SentenceTransformer('all-MiniLM-L6-v2')
-kb_questions = [item['question'] for item in knowledge_base]
-kb_embeddings = model.encode(kb_questions, convert_to_tensor=True)
+    .logo {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 50%;
+      background-color: white;
+      margin-right: 10px;
+    }
 
-# ✅ Find answer using semantic similarity
-def find_answer_semantic(user_input):
-    user_embedding = model.encode(user_input, convert_to_tensor=True)
-    cos_scores = util.pytorch_cos_sim(user_embedding, kb_embeddings)[0]
-    best_match_idx = torch.argmax(cos_scores).item()
-    best_score = cos_scores[best_match_idx].item()
+    .chat-box {
+      flex-grow: 1;
+      padding: 15px;
+      overflow-y: auto;
+      background: #f9f9f9;
+      display: flex;
+      flex-direction: column;
+    }
 
-    print(f"🧠 Semantic Similarity Score: {best_score:.2f}")
-    if best_score > 0.6:
-        best_item = knowledge_base[best_match_idx]
-        response = best_item['answer']
-        if best_item.get('link'):
-            response += f'<br><a href="{best_item["link"]}" target="_blank">Click here for more info</a>'
-        return response
-    else:
-        log_unanswered_question(user_input)
-        return "I'm not sure how to answer that. Please try rephrasing your question."
+    .message {
+      padding: 10px 14px;
+      margin: 5px 0;
+      border-radius: 12px;
+      max-width: 80%;
+      font-size: 14px;
+      animation: fadeIn 0.3s ease-in;
+    }
 
-# ✅ Log unanswered questions for review
-def log_unanswered_question(user_input):
-    with open("unanswered.log", "a", encoding="utf-8") as f:
-        f.write(user_input + "\n")
+    .user {
+      background: #007bff;
+      color: white;
+      align-self: flex-end;
+    }
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+    .bot {
+      background: #e4e6eb;
+      color: black;
+      align-self: flex-start;
+    }
 
-@app.route('/default-message', methods=['GET'])
-def default_message():
-    return jsonify({"response": "Hi! I'm the CMLI chatbot. Ask me anything about our research!"})
+    @keyframes fadeIn {
+      from {opacity: 0;}
+      to {opacity: 1;}
+    }
 
-@app.route('/chat', methods=['POST'])
-def chat():
-    try:
-        user_input = request.json.get("message", "").strip().lower()
-        if not user_input:
-            return jsonify({"response": "Please provide a valid message."})
+    .input-box {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      display: flex;
+      padding: 10px;
+      background: #fff;
+      border-top: 1px solid #ddd;
+    }
 
-        answer = find_answer_semantic(user_input)
-        return jsonify({"response": answer})
+    input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      outline: none;
+      font-size: 14px;
+    }
 
-    except Exception as e:
-        print(f"❌ Chat Error: {e}")
-        return jsonify({"response": "An internal error occurred."})
+    button {
+      margin-left: 8px;
+      padding: 10px 16px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 14px;
+    }
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    .typing-animation {
+      font-style: italic;
+      font-size: 13px;
+      color: #555;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="CMLI Logo" class="logo" />
+      Centre for Machine Learning and Intelligence
+    </div>
+
+    <div class="chat-box" id="chat-box"></div>
+
+    <div class="input-box">
+      <input type="text" id="user-input" placeholder="Type your question..." onkeypress="handleKeyPress(event)" />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    // Initial greeting
+    window.onload = () => {
+      fetch("/default-message")
+        .then(res => res.json())
+        .then(data => displayMessage(data.response, "bot"))
+        .catch(() => displayMessage("Failed to load greeting.", "bot"));
+    };
+
+    function sendMessage() {
+      const inputField = document.getElementById("user-input");
+      const userMessage = inputField.value.trim();
+      if (!userMessage) return;
+
+      displayMessage(userMessage, "user");
+      inputField.value = "";
+
+      const typingMsg = displayMessage("CMLI is typing...", "bot");
+      typingMsg.classList.add("typing-animation");
+
+      fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMessage })
+      })
+      .then(res => res.json())
+      .then(data => {
+        typingMsg.remove();
+        displayMessage(data.response, "bot");
+      })
+      .catch(() => {
+        typingMsg.remove();
+        displayMessage("CMLI: Sorry, something went wrong.", "bot");
+      });
+    }
+
+    function displayMessage(text, sender) {
+      const chatBox = document.getElementById("chat-box");
+      const message = document.createElement("div");
+      message.className = `message ${sender}`;
+      message.textContent = text;
+      chatBox.appendChild(message);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      return message;
+    }
+
+    function handleKeyPress(e) {
+      if (e.key === "Enter") {
+        sendMessage();
+      }
+    }
+  </script>
+</body>
+</html>
