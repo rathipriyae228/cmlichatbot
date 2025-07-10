@@ -15,31 +15,31 @@
       overflow: hidden;
     }
 
-    /* Chat trigger button */
+    /* Floating chat bubble button */
     .chat-toggle {
       position: fixed;
       bottom: 20px;
       right: 20px;
-      width: 60px;
-      height: 60px;
-      background: #007bff;
+      width: 65px;
+      height: 65px;
+      background: white;
       border-radius: 50%;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      cursor: pointer;
+      z-index: 999;
       display: flex;
       justify-content: center;
       align-items: center;
-      cursor: pointer;
-      z-index: 999;
       transition: transform 0.2s ease;
     }
 
     .chat-toggle:hover {
-      transform: scale(1.1);
+      transform: scale(1.08);
     }
 
-    .chat-toggle span {
-      font-size: 28px;
-      color: white;
+    .chat-toggle img {
+      width: 38px;
+      height: 38px;
     }
 
     .chat-container {
@@ -74,9 +74,9 @@
       height: 40px;
       border-radius: 50%;
       margin-right: 10px;
-      object-fit: contain;
-      background: white;
-      padding: 3px;
+      object-fit: cover;
+      background-color: white;
+      padding: 2px;
     }
 
     .chat-box {
@@ -109,7 +109,7 @@
 
     .bot {
       align-self: flex-start;
-      background: linear-gradient(to right, #fef6e4, #f3d9c0); /* ✨ Soft orange */
+      background: linear-gradient(to right, #fef6e4, #f3d9c0);
       color: black;
     }
 
@@ -133,7 +133,7 @@
     .input-box {
       display: flex;
       padding: 10px;
-      background: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.6);
       border-top: 1px solid #ccc;
     }
 
@@ -144,6 +144,8 @@
       border: 1px solid #ccc;
       outline: none;
       font-size: 14px;
+      background-color: #e6f3ff; /* ✅ Light blue input */
+      color: #000;
     }
 
     button {
@@ -164,9 +166,9 @@
 </head>
 <body>
 
-  <!-- Trigger Button -->
+  <!-- Floating Chat Button -->
   <div class="chat-toggle" onclick="toggleChat()">
-    <span>💬</span>
+    <img src="{{ url_for('static', filename='ai-icon.png') }}" alt="Chat AI Icon">
   </div>
 
   <!-- Chat Container -->
@@ -179,7 +181,7 @@
     <div class="chat-box" id="chat-box"></div>
 
     <div class="input-box">
-      <input type="text" id="user-input" placeholder="Enter your query..." onkeypress="handleKeyPress(event)" />
+      <input type="text" id="user-input" placeholder="Type your query..." onkeypress="handleKeyPress(event)" />
       <button id="send-btn" onclick="sendMessage()">Send</button>
     </div>
   </div>
@@ -190,7 +192,7 @@
     function toggleChat() {
       if (chatContainer.style.display === "none" || chatContainer.style.display === "") {
         chatContainer.style.display = "flex";
-        loadGreeting(); // trigger on open
+        loadGreeting();
       } else {
         chatContainer.style.display = "none";
       }
